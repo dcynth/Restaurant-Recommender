@@ -1,0 +1,215 @@
+<head>
+	<meta charset="utf-8" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.3/Chart.min.js"></script>
+</head>
+
+{% extends "layout.html" %}
+{% block content %}
+	<h2>{{ greeting }} Enjoy the food at C-U!</h2>
+	<div>
+		<form action="{{ url_for('main.home')}}" method="post" class="form-inline">
+			<div class="row">
+			  <div class="form-group col-md-3 mb-3">
+				<label for="city">City</label>
+				<select class="form-control" id="city" name="city" required>
+				  <option value="all">Choose...</option>
+				  <option value="Urbana">Urbana</option>
+				  <option value="Champaign">Champaign</option>
+				  <option value="all">All</option>
+				</select>
+				<div class="invalid-feedback">
+				  Please select a valid city.
+				</div>
+			  </div>
+
+				<div class="form-group col-md-3 mb-3">
+				<label for="greaterthan">Better Than: </label>
+				<select class="form-control" id="greaterthan" name="greaterthan" required>
+				  <option value="zero">Choose...</option>
+				  <option value="one">1 Star</option>
+				  <option value="two">2 Stars</option>
+				  <option value="three">3 Stars</option>
+				  <option value="four">4 Stars</option>
+				</select>
+				<div class="invalid-feedback">
+				  Please select a valid city.
+				</div>
+			  </div>
+
+			  <div class="form-group col-md-3 mb-3">
+				<label for="ranking">Ranking</label>
+				<select class="form-control" id="ranking" name="ranking" required>
+				  <option value="default">Choose...</option>
+				  <option value="highlow">From high to low</option>
+				  <option value="lowhigh">From low to high</option>
+				</select>
+				<div class="invalid-feedback">
+				  Please select a valid city.
+				</div>
+			  </div>
+			</div>
+
+			<input type="hidden" id="curr_latitude" name="curr_latitude" value="" />
+			<input type="hidden" id="curr_longitude" name="curr_longitude" value="" />
+<script>
+  if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(showPosition);
+  }
+function showPosition(position) {
+  document.getElementById('curr_latitude').value = position.coords.latitude;
+	document.getElementById('curr_longitude').value = position.coords.longitude;
+	document.getElementById('chosen_latitude').value = position.coords.latitude;
+	document.getElementById('chosen_longitude').value = position.coords.longitude;
+}
+</script>
+<script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDhYElvEtpWqQUi8ZAEJqYEZ4ZrvJn9LMc&libraries=places"></script>
+    <script type="text/javascript">
+        google.maps.event.addDomListener(window, 'load', function () {
+            var places = new google.maps.places.Autocomplete(document.getElementById('txtPlaces'));
+            google.maps.event.addListener(places, 'place_changed', function () {
+                var place = places.getPlace();
+                var address = place.formatted_address;
+                var latitude = place.geometry.location.A;
+                var longitude = place.geometry.location.F;
+								document.getElementById('chosen_latitude').value = place.geometry.location.lat();
+								document.getElementById('chosen_longitude').value = place.geometry.location.lng();
+            });
+        });
+    </script>
+    &nbsp&nbsp&nbsp&nbsp<span>Location:</span>
+    <input type="text" id="txtPlaces" value="" style="width: 250px" placeholder="Enter a location" />
+		<input type="hidden" id="chosen_latitude" name="chosen_latitude" value="" />
+		<input type="hidden" id="chosen_longitude" name="chosen_longitude" value="" />
+			&nbsp&nbsp<button type="submit" value="submitted" name="submit" class=" btn btn-outline-info">Select</button><br>
+
+		</form>
+	</div>
+	<a class='btn btn-info' href="{{ url_for('main.new_business')}}">New restaurant?</a><br /><br />
+	{% for business in status %}
+		<article class="media content-section">
+			<div class="media-body">
+				<h4><a class="article-title" href="{{ url_for('main.business', business_id=business[0],)}}">{{ business[1] }}</a></h4>
+				{% if business[5]=='Closed' %}
+				<span class="badge badge-danger">Closed</span>
+				{% else %}
+				<span class="badge badge-success">Open</span>
+				{% endif %}
+
+				<p class="article-content">Address: {{ business[2] }}<br>City: {{ business[3] }}<br>Rating: {{ business[4] }}<br>Distance: {{ business[6] }}<br>Time: {{business[7]}} </p>
+			</div>
+			{% if current_user.is_authenticated %}
+			<!-- <div style="width:60px;" align="right">
+			  <button type="button" class="btn btn-outline-info btn-sm pull-right btn-block">Liked</button>
+			</div> -->
+			  <div style="width:60px;" align="right">
+					<!-- <script type="text/javascript">
+					function changeStatus(elem) {
+						if (elem.innerHTML == 'Like') {
+							elem.innerHTML = 'Liked';
+							liked_business_id.append(business[0]);
+						} else {
+							elem.innerHTML = 'Like';
+							liked_business_id.remove(business[0]);
+						}
+					}
+				</script> -->
+
+			  {% if business[0] not in liked_business_id %}
+					<a class="btn btn-outline-info btn-sm pull-right btn-block" href="{{url_for('main.home', business_id=business[0], page=current_page, city=city, ranking=ranking, greaterthan=greaterthan, chosen_latitude=chosen_latitude, chosen_longitude=chosen_longitude,)}}">Like</a>
+			  {% else %}
+					<a class="btn btn-info btn-sm pull-right btn-block" href="{{url_for('main.home', business_id=business[0], page=current_page, city=city, ranking=ranking, greaterthan=greaterthan, chosen_latitude=chosen_latitude, chosen_longitude=chosen_longitude,)}}">Liked</a>
+				{% endif %}
+			  </div>
+			{% endif %}
+		</article>
+	{% endfor %}
+
+	{% for page_num in page_indexes %}
+		{% if page_num %}
+			{% if current_page == page_num %}
+				<a class='btn btn-outline-info mb-4' href="{{ url_for('main.home', page=page_num, city=city, ranking=ranking, greaterthan=greaterthan, chosen_latitude=chosen_latitude, chosen_longitude=chosen_longitude,)}}">{{ page_num}}</a>
+			{% else %}
+				<a class='btn btn-info mb-4' href="{{ url_for('main.home', page=page_num, city=city, ranking=ranking, greaterthan=greaterthan, chosen_latitude=chosen_latitude, chosen_longitude=chosen_longitude,)}}">{{ page_num}}</a>
+			{% endif %}
+		{% else %}
+			...
+		{% endif %}
+	{% endfor %}
+
+{% endblock content %}
+
+{% block sidecontent %}
+{% if current_user.is_authenticated %}
+<div class="content-section">
+	<h3>Your Friends Like ...</h3>
+	{% for business in recommended_businesses %}
+		<article class="media content-section">
+			<div class="media-body">
+			  <h5><a class="article-title" href="#">{{ business[1] }}</a></h5>
+			  <p class="article-content">Address: {{ business[2] }}<br>City: {{ business[3] }}<br>Rating: {{ business[6] }}<br>From: <strong>{{ ', '.join(recommended_businesses[business][:3]) }}</strong></p>
+			</div>
+
+		</article>
+	{% endfor %}
+</div>
+{% endif %}
+<div class="content-section">
+	<h3>Distributions</h3>
+	<div class="col">
+		<canvas id="myChart" width="375" height="400"></canvas>
+		<script>
+			Chart.defaults.global.responsive = false;
+			var chartData = {
+				type: 'bar',
+			  labels : [{% for item in labels %}
+			             "{{item}}",
+			            {% endfor %}],
+			  datasets : [{
+			      backgroundColor: ["#e8c3b9", "#8e5ea2","#3cba9f", "#3e95cd","#c45850"],
+			      data : [{% for item in values %}
+			                {{item}},
+			              {% endfor %}]
+			  }]
+			}
+			var ctx = document.getElementById("myChart").getContext("2d");
+			var myChart = new Chart(ctx, {
+			  type: 'bar',
+			  data: chartData,
+				options: {
+					legend: {display: false},
+					title: {
+						display: true,
+						text: "Review Distribution"
+					}
+				}
+			});
+		</script>
+		<canvas id="myChart2" width="375" height="450"></canvas>
+			<script>
+				Chart.defaults.global.responsive = false;
+				var chartData = {
+					type: 'pie',
+				  labels : [{% for item in labels_pi %}
+				             "{{item}}",
+				            {% endfor %}],
+				  datasets : [{
+				      backgroundColor: ["#0c69c0", "#f23636","#0cbb12","#f66fd6","#0eced8", "#053d2c", "#9a0dc5", "#e1c20e", "#f2542c"],
+				      data : [{% for item in values_pi %}
+				                {{item}},
+				              {% endfor %}]
+				  }]
+				}
+				var ctx = document.getElementById("myChart2").getContext("2d");
+				var myChart = new Chart(ctx, {
+				  type: 'pie',
+				  data: chartData,
+					options: {
+						title: {
+							display: true,
+							text: "Cuisine Distribution"
+						}
+					}
+				});
+			</script>
+		</div>
+{% endblock sidecontent %}
